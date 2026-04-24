@@ -7,12 +7,17 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from database import get_db
-from models import User, Course, Enrollment, Payment, Subscription, LessonContent, Module, ContentProgress
+from models import (
+    User, Course, Enrollment, Payment, Subscription, LessonContent, Module, ContentProgress,
+    Program, ProgramEnrollment, Diploma, DiplomaEnrollment
+)
 from schemas import (
     EnrollmentDetailResponse,
     ContentProgressCreate,
     ContentProgressResponse,
     CourseProgressDetailResponse,
+    ProgramEnrollmentResponse,
+    DiplomaEnrollmentResponse,
 )
 from auth import decode_access_token
 

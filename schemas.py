@@ -43,10 +43,140 @@ class Token(BaseModel):
     user: UserResponse
 
 
+class CategoryBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    color: str = "#3B82F6"
+    icon: Optional[str] = None
+    is_active: bool = True
+    order: int = 0
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class CategoryResponse(CategoryBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    is_active: Optional[bool] = None
+    order: Optional[int] = None
+
+
+class ProgramBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    diploma_id: Optional[int] = None
+    duration_months: int = 6
+    difficulty: str = "beginner"
+    prerequisites: Optional[str] = None
+    color: str = "#10B981"
+    icon: Optional[str] = None
+    image_url: Optional[str] = None
+    status: str = "draft"
+    order: int = 0
+    is_featured: bool = False
+    fee: int = 0  # In cents
+    promo_amount: int = 0  # In cents
+    is_on_promo: bool = False
+
+
+class ProgramCreate(ProgramBase):
+    pass
+
+
+class ProgramResponse(ProgramBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProgramUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    diploma_id: Optional[int] = None
+    duration_months: Optional[int] = None
+    difficulty: Optional[str] = None
+    prerequisites: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    image_url: Optional[str] = None
+    status: Optional[str] = None
+    order: Optional[int] = None
+    is_featured: Optional[bool] = None
+    fee: Optional[int] = None
+    promo_amount: Optional[int] = None
+    is_on_promo: Optional[bool] = None
+
+
+class DiplomaBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    duration_years: int = 1
+    level: str = "certificate"
+    field: Optional[str] = None
+    color: str = "#8B5CF6"
+    icon: Optional[str] = None
+    image_url: Optional[str] = None
+    status: str = "draft"
+    is_featured: bool = False
+    fee: int = 0  # In cents
+    promo_amount: int = 0  # In cents
+    is_on_promo: bool = False
+
+
+class DiplomaCreate(DiplomaBase):
+    pass
+
+
+class DiplomaResponse(DiplomaBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DiplomaUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    duration_years: Optional[int] = None
+    level: Optional[str] = None
+    field: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    image_url: Optional[str] = None
+    status: Optional[str] = None
+    is_featured: Optional[bool] = None
+    fee: Optional[int] = None
+    promo_amount: Optional[int] = None
+    is_on_promo: Optional[bool] = None
+
+
 class CourseBase(BaseModel):
     title: str
     description: Optional[str] = None
-    category: str
+    category_id: int
+    program_id: Optional[int] = None
     difficulty: str = "beginner"
     duration_hours: int = 0
     prerequisites: Optional[str] = None
@@ -73,7 +203,7 @@ class CourseResponse(CourseBase):
 class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category: Optional[str] = None
+    category_id: Optional[int] = None
     difficulty: Optional[str] = None
     duration_hours: Optional[int] = None
     prerequisites: Optional[str] = None
@@ -567,6 +697,58 @@ class EnrollmentWithCourseResponse(BaseModel):
     course: CourseResponse
     enrolled_at: datetime
     completed_at: Optional[datetime] = None
+
+
+# Question and Assessment Schemas
+class QuestionBase(BaseModel):
+    question_text: str
+    question_type: str  # "objective", "theory", "essay"
+    order: int
+    options: Optional[str] = None  # JSON array for objective questions
+    correct_answer: Optional[str] = None  # For objective questions
+    sample_answer: Optional[str] = None  # For theory/essay questions
+    points: int = 1
+
+
+class QuestionCreate(QuestionBase):
+    content_id: int
+
+
+class QuestionResponse(QuestionBase):
+    id: int
+    content_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class QuestionUpdate(BaseModel):
+    question_text: Optional[str] = None
+    question_type: Optional[str] = None
+    order: Optional[int] = None
+    options: Optional[str] = None
+    correct_answer: Optional[str] = None
+    sample_answer: Optional[str] = None
+    points: Optional[int] = None
+
+
+class StudentAnswerCreate(BaseModel):
+    question_id: int
+    answer_text: str
+    assessment_attempt_id: int
+
+
+class StudentAnswerResponse(StudentAnswerCreate):
+    id: int
+    user_id: int
+    is_correct: Optional[bool] = None
+    points_earned: int
+    submitted_at: datetime
+
+    class Config:
+        from_attributes = True
     progress_percentage: int
     modules_count: int = 0
     content_items_count: int = 0
@@ -733,3 +915,61 @@ class EnrollmentDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Program Enrollment Schemas
+class ProgramEnrollmentBase(BaseModel):
+    program_id: int
+
+
+class ProgramEnrollmentCreate(ProgramEnrollmentBase):
+    payment_id: Optional[int] = None
+
+
+class ProgramEnrollmentResponse(ProgramEnrollmentBase):
+    id: int
+    user_id: int
+    status: str
+    enrolled_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    progress_percentage: int
+    payment_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProgramEnrollmentDetailResponse(ProgramEnrollmentResponse):
+    program_title: str
+    courses_count: int
+    completed_courses_count: int
+
+
+# Diploma Enrollment Schemas
+class DiplomaEnrollmentBase(BaseModel):
+    diploma_id: int
+
+
+class DiplomaEnrollmentCreate(DiplomaEnrollmentBase):
+    payment_id: Optional[int] = None
+
+
+class DiplomaEnrollmentResponse(DiplomaEnrollmentBase):
+    id: int
+    user_id: int
+    status: str
+    enrolled_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    progress_percentage: int
+    payment_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DiplomaEnrollmentDetailResponse(DiplomaEnrollmentResponse):
+    diploma_title: str
+    programs_count: int
+    completed_programs_count: int

@@ -16,6 +16,21 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
+class Category(Base):
+    """Course categories"""
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    color = Column(String, default="#3B82F6")  # Hex color for UI
+    icon = Column(String, nullable=True)  # Icon name/class
+    is_active = Column(Boolean, default=True)
+    order = Column(Integer, default=0)  # Display order
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 class UserProfile(Base):
     __tablename__ = "user_profiles"
 
@@ -27,13 +42,80 @@ class UserProfile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Program(Base):
+    """Educational programs that group multiple courses"""
+    __tablename__ = "programs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    short_description = Column(String, nullable=True)  # Brief summary for cards
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=True)  # Can be standalone or part of diploma
+
+    # Program details
+    duration_months = Column(Integer, default=6)  # Expected completion time
+    difficulty = Column(String, default="beginner")  # beginner, intermediate, advanced
+    prerequisites = Column(Text, nullable=True)
+
+    # Visual elements
+    color = Column(String, default="#10B981")  # Hex color for UI
+    icon = Column(String, nullable=True)  # Icon name/class
+    image_url = Column(String, nullable=True)  # Program banner image
+
+    # Status and ordering
+    status = Column(String, default="draft")  # draft, published, archived
+    order = Column(Integer, default=0)  # Display order within diploma
+    is_featured = Column(Boolean, default=False)  # Featured program
+
+    # Pricing (optional - programs can be free or paid)
+    fee = Column(Integer, default=0)  # In cents, 0 = free program
+    promo_amount = Column(Integer, default=0)  # Promo discount in cents
+    is_on_promo = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Diploma(Base):
+    """Diploma programs that group multiple programs"""
+    __tablename__ = "diplomas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    short_description = Column(String, nullable=True)  # Brief summary for cards
+
+    # Diploma details
+    duration_years = Column(Integer, default=1)  # Expected completion time
+    level = Column(String, default="certificate")  # certificate, diploma, degree
+    field = Column(String, nullable=True)  # e.g., "Computer Science", "Business"
+
+    # Visual elements
+    color = Column(String, default="#8B5CF6")  # Hex color for UI
+    icon = Column(String, nullable=True)  # Icon name/class
+    image_url = Column(String, nullable=True)  # Diploma banner image
+
+    # Status and ordering
+    status = Column(String, default="draft")  # draft, published, archived
+    is_featured = Column(Boolean, default=False)  # Featured diploma
+
+    # Pricing (optional - diplomas can be free or paid)
+    fee = Column(Integer, default=0)  # In cents, 0 = free diploma
+    promo_amount = Column(Integer, default=0)  # Promo discount in cents
+    is_on_promo = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    category = Column(String, nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)  # Courses can be standalone or part of program
     difficulty = Column(String, default="beginner")  # beginner, intermediate, advanced
     instructor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     duration_hours = Column(Integer, default=0)
@@ -466,6 +548,46 @@ class Subscription(Base):
     start_date = Column(DateTime(timezone=True), server_default=func.now())
     end_date = Column(DateTime(timezone=True), nullable=False)
     auto_renew = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ProgramEnrollment(Base):
+    """Track student enrollment in programs"""
+    __tablename__ = "program_enrollments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=False, index=True)
+    
+    status = Column(String, default="enrolled")  # enrolled, active, completed
+    enrolled_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True), nullable=True)  # When student clicked "Start Learning"
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    progress_percentage = Column(Integer, default=0)  # Overall program progress
+    payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True)  # For paid programs
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class DiplomaEnrollment(Base):
+    """Track student enrollment in diplomas"""
+    __tablename__ = "diploma_enrollments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=False, index=True)
+    
+    status = Column(String, default="enrolled")  # enrolled, active, completed
+    enrolled_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True), nullable=True)  # When student clicked "Start Learning"
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    progress_percentage = Column(Integer, default=0)  # Overall diploma progress
+    payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True)  # For paid diplomas
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
