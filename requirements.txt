@@ -8,3 +8,4 @@ pydantic-settings==2.1.0
 cors==1.0.1
 passlib[argon2]
 python-jose[cryptography]
+requests==2.31.0
