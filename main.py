@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from database import engine, Base
 from routes.auth import router as auth_router
 from routes.admin_auth import router as admin_auth_router
@@ -31,17 +32,16 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+        os.getenv("ADMIN_URL", "http://localhost:3002"),
+        os.getenv("BACKEND_URL", "http://localhost:8000"),
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
         "http://localhost:8000",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "http://127.0.0.1:3002",
-        "https://sabi-educate.netlify.app",
-        "https://sabi-admin.netlify.app",
-        "https://sabi-frontend.netlify.app",
-        "*"  # Allow all origins for development - restrict in production
+        "http://127.0.0.1:3002"
     ],
     allow_credentials=True,
     allow_methods=["*"],
