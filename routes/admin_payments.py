@@ -6,13 +6,37 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 from database import get_db
-from models import Payment, User, Enrollment, ProgramEnrollment, DiplomaEnrollment, Course, Program, Diploma
+from models import Payment, User, Enrollment, ProgramEnrollment, DiplomaEnrollment, Course, Program, Diploma, AdminUser
 from routes.admin_auth import get_current_admin
 from services.email_service import EmailService
 from datetime import datetime, timedelta
 from typing import Optional, List
 
 router = APIRouter(prefix="/api/admin/payments", tags=["admin-payments"])
+
+
+# === DEBUG ENDPOINT ===
+
+@router.get("/debug/health")
+async def health_check(db: Session = Depends(get_db)):
+    """Health check - no auth required"""
+    try:
+        # Check database connection
+        payment_count = db.query(Payment).count()
+        admin_count = db.query(AdminUser).count()
+        
+        return {
+            "status": "ok",
+            "database": "connected",
+            "payments_count": payment_count,
+            "admins_count": admin_count
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "database": "failed",
+            "error": str(e)
+        }
 
 
 # === LIST PAYMENTS ===
