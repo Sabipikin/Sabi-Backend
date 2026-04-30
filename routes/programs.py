@@ -176,8 +176,7 @@ async def get_published_programs(
     limit: int = Query(10, ge=1, le=100),
     diploma_id: int = Query(None),
     search: str = Query(None),
-    difficulty: str = Query(None),
-    status: str = Query(None)
+    difficulty: str = Query(None)
 ):
     """Get all published programs (public view)"""
     try:
@@ -191,9 +190,6 @@ async def get_published_programs(
 
         if difficulty and difficulty != "all":
             query = query.filter(Program.difficulty == difficulty)
-
-        if status and status != "all":
-            query = query.filter(Program.status == status)
 
         query = query.order_by(Program.order, Program.title)
         programs = query.offset(skip).limit(limit).all()

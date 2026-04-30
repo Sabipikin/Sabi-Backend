@@ -214,8 +214,7 @@ async def get_published_diplomas(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
     search: str = Query(None),
-    level: str = Query(None),
-    status: str = Query(None)
+    level: str = Query(None)
 ):
     """Get all published diplomas (public view)"""
     query = db.query(Diploma).filter(Diploma.status == "published")
@@ -225,9 +224,6 @@ async def get_published_diplomas(
 
     if level and level != "all":
         query = query.filter(Diploma.level == level)
-
-    if status and status != "all":
-        query = query.filter(Diploma.status == status)
 
     query = query.order_by(Diploma.title)
     diplomas = query.offset(skip).limit(limit).all()
