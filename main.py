@@ -19,6 +19,7 @@ from routes.diploma_enrollment import router as diploma_enrollment_router
 from routes.assessments import router as assessments_router
 from routes.subscriptions import router as subscriptions_router
 from routes.payments import router as payments_router
+from routes.admin_payments import router as admin_payments_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -58,6 +59,7 @@ app.include_router(diploma_enrollment_router)
 app.include_router(assessments_router)
 app.include_router(subscriptions_router)
 app.include_router(payments_router)
+app.include_router(admin_payments_router)
 
 
 @app.get("/")
