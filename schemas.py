@@ -599,6 +599,17 @@ class ComplaintResponse(BaseModel):
         from_attributes = True
 
 
+class PaymentCreate(BaseModel):
+    amount: int  # In cents
+    currency: str = "gbp"
+    description: str
+    item_type: str  # 'course', 'program', 'diploma', 'subscription'
+    course_id: Optional[int] = None
+    program_id: Optional[int] = None
+    diploma_id: Optional[int] = None
+    subscription_id: Optional[int] = None
+
+
 class PaymentResponse(BaseModel):
     id: int
     user_id: int
@@ -607,12 +618,35 @@ class PaymentResponse(BaseModel):
     status: str
     payment_method: Optional[str] = None
     transaction_id: Optional[str] = None
+    payoneer_order_id: Optional[str] = None
+    checkout_url: Optional[str] = None
+    item_type: Optional[str] = None
     course_id: Optional[int] = None
+    program_id: Optional[int] = None
+    diploma_id: Optional[int] = None
+    subscription_id: Optional[int] = None
+    description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    completed_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class PaymentCheckoutRequest(BaseModel):
+    item_type: str  # 'course', 'program', 'diploma', 'subscription'
+    item_id: int
+    currency: str = "gbp"
+
+
+class PaymentWebhookRequest(BaseModel):
+    transaction_id: str
+    status: str  # completed, failed, pending, refunded
+    amount: int
+    currency: str
+    timestamp: Optional[str] = None
+    signature: Optional[str] = None  # For webhook verification
 
 
 class AnalyticsResponse(BaseModel):

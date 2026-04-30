@@ -398,15 +398,30 @@ class Payment(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Integer, nullable=False)  # In cents
     currency = Column(String, default="gbp")  # gbp, eur, usd
-    status = Column(String, default="pending")  # pending, completed, failed, refunded
-    payment_method = Column(String, nullable=True)  # card, paypal, bank_transfer
+    status = Column(String, default="pending")  # pending, completed, failed, refunded, expired
+    payment_method = Column(String, default="payoneer")  # payoneer, card, etc
     transaction_id = Column(String, nullable=True, unique=True)
+    payoneer_order_id = Column(String, nullable=True, unique=True)  # Payoneer order ID
+    checkout_url = Column(String, nullable=True)  # Payoneer checkout URL
+    
+    # Item type and ID (could be course, program, diploma, subscription)
+    item_type = Column(String, nullable=True)  # 'course', 'program', 'diploma', 'subscription'
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=True)
+    
     description = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     processed_by = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
+    
+    # Webhook data
+    payoneer_webhook_response = Column(Text, nullable=True)  # Store webhook response
+    webhook_verified = Column(Boolean, default=False)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class Analytics(Base):
