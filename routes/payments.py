@@ -2,13 +2,14 @@
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from models import (
     Payment, User, Course, Program, Diploma,
-    Enrollment, ProgramEnrollment, DiplomaEnrollment
+    Enrollment, ProgramEnrollment, DiplomaEnrollment,
+    Subscription, SubscriptionPlan
 )
 from schemas import (
     PaymentCreate, PaymentResponse, 
@@ -16,6 +17,8 @@ from schemas import (
 )
 from auth import decode_access_token
 from services.payoneer_service import PayoneerService, PayoneerError
+from services.email_service import EmailService
+from services.invoice_generator import InvoiceGenerator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -195,9 +198,33 @@ async def payoneer_webhook(
         payment.payoneer_webhook_response = json.dumps(webhook_data)
         payment.webhook_verified = True
         
-        # If payment is completed, create enrollment
+        # Get user data for emails
+        user = db.query(User).filter(User.id == payment.user_id).first()
+        email_service = EmailService()
+        
+        # Prepare payment data for emails
+        payment_data_dict = {
+            "id": payment.id,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "item_type": payment.item_type,
+            "item_name": payment.description or "",
+            "payoneer_order_id": payment.payoneer_order_id,
+            "created_at": payment.created_at.isoformat() if payment.created_at else datetime.utcnow().isoformat(),
+            "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+            "status": payment.status,
+        }
+        
+        user_data_dict = {
+            "full_name": user.full_name or user.email,
+            "email": user.email,
+            "region": getattr(user, "region", ""),
+        }
+        
+        # If payment is completed, create enrollment and send receipt
         if processed_data["status"] == "completed":
             payment.completed_at = datetime.utcnow()
+            payment_data_dict["completed_at"] = payment.completed_at.isoformat()
             
             if payment.item_type == "course" and payment.course_id:
                 existing = db.query(Enrollment).filter(
@@ -235,6 +262,78 @@ async def payoneer_webhook(
                         diploma_id=payment.diploma_id
                     )
                     db.add(enrollment)
+            
+            elif payment.item_type == "subscription":
+                # Extract plan_id from the payment
+                # The item_id in checkout was the plan_id
+                from models import SubscriptionPlan as SubscriptionPlanModel
+                # Find plan_id from payment description or use a lookup
+                # For now, we'll need to look up which plan was purchased
+                # This requires the subscription webhook to pass plan_id in item_id
+                # We'll handle this by getting the plan from the item_id in the payment
+                
+                # Create subscription if doesn't exist
+                existing = db.query(Subscription).filter(
+                    Subscription.user_id == payment.user_id,
+                    Subscription.status.in_(["active", "paused"])
+                ).first()
+                
+                if not existing and payment.subscription_id:
+                    # Get the plan from payment
+                    plan = db.query(SubscriptionPlanModel).filter(
+                        SubscriptionPlanModel.id == payment.subscription_id
+                    ).first()
+                    
+                    if plan:
+                        end_date = datetime.utcnow() + timedelta(days=plan.duration_days)
+                        subscription = Subscription(
+                            user_id=payment.user_id,
+                            plan_id=plan.id,
+                            payment_id=payment.id,
+                            status="active",
+                            end_date=end_date,
+                            auto_renew=True
+                        )
+                        db.add(subscription)
+                        
+                        # Send subscription activated email
+                        email_service.send_email(
+                            to_email=user.email,
+                            subject=f"Welcome to {plan.name}!",
+                            template_name="subscription_activated.html",
+                            context={
+                                "user_name": user.full_name or user.email,
+                                "plan_name": plan.name,
+                                "start_date": datetime.utcnow().strftime("%B %d, %Y"),
+                                "end_date": end_date.strftime("%B %d, %Y"),
+                                "dashboard_url": os.getenv("FRONTEND_URL", "https://app.sabieducate.com"),
+                                "support_email": os.getenv("SUPPORT_EMAIL", "support@sabieducate.com"),
+                            }
+                        )
+            
+            # Send payment receipt email
+            email_service.send_payment_receipt(
+                user_email=user.email,
+                user_name=user.full_name or user.email,
+                payment_data=payment_data_dict
+            )
+            
+            # Generate and store invoice
+            invoice_generator = InvoiceGenerator()
+            invoice_bytes = invoice_generator.generate_payment_invoice(
+                payment_data=payment_data_dict,
+                user_data=user_data_dict
+            )
+            if invoice_bytes:
+                logger.info(f"Invoice generated for payment {payment.id}")
+        
+        # Send confirmation email when payment is received (before completion)
+        elif processed_data["status"] == "pending":
+            email_service.send_payment_confirmation(
+                user_email=user.email,
+                user_name=user.full_name or user.email,
+                payment_data=payment_data_dict
+            )
         
         db.commit()
         logger.info(f"Payment {payment.id} updated to status: {processed_data['status']}")

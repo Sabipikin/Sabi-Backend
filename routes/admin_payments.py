@@ -8,6 +8,7 @@ from sqlalchemy import func, and_, or_
 from database import get_db
 from models import Payment, User, Enrollment, ProgramEnrollment, DiplomaEnrollment, Course, Program, Diploma
 from routes.admin_auth import get_current_admin
+from services.email_service import EmailService
 from datetime import datetime, timedelta
 from typing import Optional, List
 
@@ -279,6 +280,25 @@ async def process_refund(
             db.delete(enrollment)
     
     db.commit()
+    
+    # Send refund notification email
+    user = db.query(User).filter(User.id == payment.user_id).first()
+    if user:
+        payment_data = {
+            "id": payment.id,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "item_type": payment.item_type,
+            "item_name": payment.description or "",
+            "payoneer_order_id": payment.payoneer_order_id,
+            "status": payment.status,
+        }
+        email_service = EmailService()
+        email_service.send_refund_notification(
+            user_email=user.email,
+            user_name=user.full_name or user.email,
+            payment_data=payment_data
+        )
     
     return {
         "status": "ok",
