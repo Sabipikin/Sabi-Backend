@@ -175,7 +175,9 @@ async def get_published_programs(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     diploma_id: int = Query(None),
-    search: str = Query(None)
+    search: str = Query(None),
+    difficulty: str = Query(None),
+    status: str = Query(None)
 ):
     """Get all published programs (public view)"""
     try:
@@ -187,11 +189,20 @@ async def get_published_programs(
         if search:
             query = query.filter(Program.title.ilike(f"%{search}%"))
 
+        if difficulty and difficulty != "all":
+            query = query.filter(Program.difficulty == difficulty)
+
+        if status and status != "all":
+            query = query.filter(Program.status == status)
+
         query = query.order_by(Program.order, Program.title)
         programs = query.offset(skip).limit(limit).all()
         
         result = []
         for p in programs:
+            # Count courses in this program
+            courses_count = db.query(Course).filter(Course.program_id == p.id).count()
+            
             result.append({
                 "id": p.id,
                 "title": p.title,
@@ -211,7 +222,8 @@ async def get_published_programs(
                 "promo_amount": p.promo_amount,
                 "is_on_promo": p.is_on_promo,
                 "created_at": p.created_at,
-                "updated_at": p.updated_at
+                "updated_at": p.updated_at,
+                "courses_count": courses_count
             })
         
         return result

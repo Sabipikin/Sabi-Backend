@@ -208,13 +208,14 @@ async def get_diploma_structure(
 
 # PUBLIC ENDPOINTS - No authentication required
 
-@public_router.get("/", response_model=list[DiplomaResponse])
+@public_router.get("/", response_model=list[dict])
 async def get_published_diplomas(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
     search: str = Query(None),
-    level: str = Query(None)
+    level: str = Query(None),
+    status: str = Query(None)
 ):
     """Get all published diplomas (public view)"""
     query = db.query(Diploma).filter(Diploma.status == "published")
@@ -222,12 +223,42 @@ async def get_published_diplomas(
     if search:
         query = query.filter(Diploma.title.ilike(f"%{search}%"))
 
-    if level:
+    if level and level != "all":
         query = query.filter(Diploma.level == level)
+
+    if status and status != "all":
+        query = query.filter(Diploma.status == status)
 
     query = query.order_by(Diploma.title)
     diplomas = query.offset(skip).limit(limit).all()
-    return [DiplomaResponse.from_orm(d) for d in diplomas]
+    
+    result = []
+    for d in diplomas:
+        # Count programs in this diploma
+        programs_count = db.query(Program).filter(Program.diploma_id == d.id).count()
+        
+        result.append({
+            "id": d.id,
+            "title": d.title,
+            "description": d.description,
+            "short_description": d.short_description,
+            "duration_years": d.duration_years,
+            "level": d.level,
+            "field": d.field,
+            "color": d.color,
+            "icon": d.icon,
+            "image_url": d.image_url,
+            "status": d.status,
+            "is_featured": d.is_featured,
+            "fee": d.fee,
+            "promo_amount": d.promo_amount,
+            "is_on_promo": d.is_on_promo,
+            "created_at": d.created_at,
+            "updated_at": d.updated_at,
+            "programs_count": programs_count
+        })
+    
+    return result
 
 
 @public_router.get("/{diploma_id}", response_model=DiplomaResponse)
