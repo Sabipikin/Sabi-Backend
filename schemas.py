@@ -1007,3 +1007,41 @@ class DiplomaEnrollmentDetailResponse(DiplomaEnrollmentResponse):
     diploma_title: str
     programs_count: int
     completed_programs_count: int
+
+
+# Completion Certificate Schemas
+class CompletionCertificateBase(BaseModel):
+    user_id: int
+    item_type: str  # 'course', 'program', 'diploma'
+    course_id: Optional[int] = None
+    program_id: Optional[int] = None
+    diploma_id: Optional[int] = None
+
+
+class CertificateResponse(BaseModel):
+    id: int
+    user_id: int
+    item_type: str
+    certificate_number: str
+    completed_at: datetime
+    issued_at: datetime
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class CertificateDetailResponse(BaseModel):
+    id: int
+    user_id: int
+    item_type: str
+    item_name: Optional[str] = None
+    certificate_number: str
+    verification_code: str
+    completed_at: datetime
+    issued_at: datetime
+    status: str
+    change_request: Optional[dict] = None
+
+    class Config:
+        from_attributes = True

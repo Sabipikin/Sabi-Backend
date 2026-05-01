@@ -606,3 +606,38 @@ class DiplomaEnrollment(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class CompletionCertificate(Base):
+    """Certificates issued upon completion of courses, programs, or diplomas"""
+    __tablename__ = "completion_certificates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Enrollment reference (one-to-one depending on item_type)
+    item_type = Column(String, nullable=False)  # 'course', 'program', 'diploma'
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=True)
+    enrollment_id = Column(Integer, nullable=True)  # Enrollment record ID for reference
+    
+    # Certificate metadata
+    certificate_number = Column(String, unique=True, nullable=False)  # e.g., SABIKIN-CERT-2024-00001
+    verification_code = Column(String, unique=True, nullable=False)  # QR code data / verification
+    
+    # Completion and issuance
+    completed_at = Column(DateTime(timezone=True), nullable=False)  # When course/program/diploma was completed
+    issued_at = Column(DateTime(timezone=True), server_default=func.now())  # When certificate was generated
+    
+    # File storage
+    pdf_path = Column(String, nullable=True)  # Local storage path or S3 URL for PDF
+    
+    # Status
+    status = Column(String, default="issued")  # issued, revoked, expired, reissue_requested
+    
+    # For certificate change requests (name correction, physical copy, etc.)
+    change_request = Column(Text, nullable=True)  # JSON: {request_type, old_value, new_value, reason, status}
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
