@@ -250,6 +250,40 @@ async def complete_lesson(
     return ProgressResponse.from_orm(progress)
 
 
+@router.get("/featured", response_model=list[CourseResponse])
+async def get_featured_courses(
+    limit: int = 6,
+    db: Session = Depends(get_db)
+):
+    # Get courses with highest enrollment count (top sellers)
+    from sqlalchemy import func
+    
+    # Query courses with enrollment counts
+    courses_with_enrollments = (
+        db.query(Course, func.count(Enrollment.id).label('enrollment_count'))
+        .join(Enrollment, Course.id == Enrollment.course_id, isouter=True)
+        .filter(Course.status == "published")
+        .group_by(Course.id)
+        .order_by(func.count(Enrollment.id).desc())
+        .limit(limit)
+        .all()
+    )
+    
+    # If no enrollments, return recent courses
+    if not courses_with_enrollments or all(count == 0 for _, count in courses_with_enrollments):
+        recent_courses = (
+            db.query(Course)
+            .filter(Course.status == "published")
+            .order_by(Course.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [CourseResponse.from_orm(course) for course in recent_courses]
+    
+    # Return courses sorted by enrollment count
+    return [CourseResponse.from_orm(course) for course, _ in courses_with_enrollments]
+
+
 @router.post("/lessons/{lesson_id}/progress")
 async def update_lesson_progress(
     lesson_id: int,

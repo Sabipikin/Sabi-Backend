@@ -22,6 +22,7 @@ from routes.payments import router as payments_router
 from routes.admin_payments import router as admin_payments_router
 from routes.certificates import router as certificates_router
 from routes.recommendations import router as recommendations_router
+from routes.cart import router as cart_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -64,6 +65,7 @@ app.include_router(payments_router)
 app.include_router(admin_payments_router)
 app.include_router(certificates_router)
 app.include_router(recommendations_router)
+app.include_router(cart_router)
 
 
 @app.get("/")

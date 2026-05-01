@@ -772,3 +772,27 @@ class TrendingAnalytic(Base):
     role_enrollments = Column(Integer, default=0)  # Pathway enrollments
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Cart(Base):
+    """Shopping cart for storing items before checkout (for unauthenticated or authenticated users)"""
+    __tablename__ = "cart"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # NULL for unauthenticated
+    session_id = Column(String, nullable=True, index=True)  # For tracking unauthenticated carts
+    
+    # Item being added to cart
+    item_type = Column(String, nullable=False)  # 'course', 'program', 'diploma'
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=True)
+    
+    # Pricing snapshot at time of add
+    price = Column(Integer, nullable=False)  # In cents
+    discount = Column(Integer, default=0)  # In cents
+    
+    quantity = Column(Integer, default=1)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -1159,3 +1159,46 @@ class UserCareerPathResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CartBase(BaseModel):
+    item_type: str  # 'course', 'program', 'diploma'
+    course_id: Optional[int] = None
+    program_id: Optional[int] = None
+    diploma_id: Optional[int] = None
+    price: int  # In cents
+    discount: int = 0  # In cents
+    quantity: int = 1
+
+
+class CartCreate(CartBase):
+    pass
+
+
+class CartResponse(CartBase):
+    id: int
+    user_id: Optional[int] = None
+    session_id: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CartUpdate(BaseModel):
+    quantity: Optional[int] = None
+
+
+class CheckoutRequest(BaseModel):
+    subscribe: bool = False
+    plan_id: Optional[int] = None  # Required if subscribe=True
+
+
+class CheckoutResponse(BaseModel):
+    success: bool
+    type: str  # 'subscription' or 'pay_per_item'
+    payment_id: int
+    amount: int  # In cents
+    plan_name: Optional[str] = None
+    items_count: Optional[int] = None
