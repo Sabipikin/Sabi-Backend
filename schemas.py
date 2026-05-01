@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -1042,6 +1042,120 @@ class CertificateDetailResponse(BaseModel):
     issued_at: datetime
     status: str
     change_request: Optional[dict] = None
+
+    class Config:
+        from_attributes = True
+
+
+# Career Pathway and AI Recommendation Schemas
+
+class SkillResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    is_trending: bool
+    popularity_score: int
+    demand_score: int
+
+    class Config:
+        from_attributes = True
+
+
+class CareerRoleResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    salary_range: Optional[str] = None
+    difficulty: str
+    popularity_score: int
+    is_trending: bool
+    is_featured: bool
+
+    class Config:
+        from_attributes = True
+
+
+class CareerRoleDetailResponse(CareerRoleResponse):
+    required_skills: List[SkillResponse] = []
+
+
+class CareerPathwayResponse(BaseModel):
+    id: int
+    career_role_id: int
+    title: str
+    description: Optional[str] = None
+    duration_months: Optional[int] = None
+    difficulty: str
+    completion_percentage: int
+    students_count: int
+    popularity_score: int
+
+    class Config:
+        from_attributes = True
+
+
+class CareerPathwayDetailResponse(CareerPathwayResponse):
+    diploma_id: Optional[int] = None
+    program_ids: Optional[List[int]] = None
+    course_ids: Optional[List[int]] = None
+    required_skills: List[SkillResponse] = []
+    career_role: CareerRoleResponse
+
+
+class TrendingCourseResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    difficulty: str
+    category_name: str
+    enrollment_count: int
+    completion_rate: float
+    trending_score: int
+    icon: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TrendingSkillResponse(BaseModel):
+    id: int
+    name: str
+    category: Optional[str] = None
+    demand_score: int
+    popularity_score: int
+    courses_count: int
+    related_jobs: int
+
+    class Config:
+        from_attributes = True
+
+
+class RecommendationResponse(BaseModel):
+    recommended_type: str  # 'course', 'program', 'pathway'
+    item_id: int
+    title: str
+    description: Optional[str] = None
+    reason: str
+    score: float  # 0-100 match score
+    skills_learned: List[str] = []
+    duration: Optional[int] = None  # In hours/minutes/months
+
+    class Config:
+        from_attributes = True
+
+
+class UserCareerPathResponse(BaseModel):
+    user_id: int
+    current_role: Optional[str] = None
+    target_role: Optional[str] = None
+    career_pathway: Optional[CareerPathwayResponse] = None
+    progress_percentage: int
+    completed_courses: int
+    in_progress_courses: int
+    next_recommended_course: Optional[RecommendationResponse] = None
+    suggested_skills: List[SkillResponse] = []
 
     class Config:
         from_attributes = True

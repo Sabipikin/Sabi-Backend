@@ -641,3 +641,134 @@ class CompletionCertificate(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# Career Pathway Models
+class CareerRole(Base):
+    """Career roles/job titles with recommended learning paths"""
+    __tablename__ = "career_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, unique=True, nullable=False)  # e.g., "Full Stack Developer", "Data Scientist"
+    description = Column(Text, nullable=True)
+    category = Column(String, nullable=True)  # e.g., "Technology", "Business", "Creative"
+    salary_range = Column(String, nullable=True)  # e.g., "£40k-£80k"
+    difficulty = Column(String, default="intermediate")  # beginner, intermediate, advanced
+    popularity_score = Column(Integer, default=0)  # 0-100 based on demand
+    icon = Column(String, nullable=True)
+    
+    is_trending = Column(Boolean, default=False)
+    is_featured = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class CareerPathway(Base):
+    """Learning pathways aligned with career roles"""
+    __tablename__ = "career_pathways"
+
+    id = Column(Integer, primary_key=True, index=True)
+    career_role_id = Column(Integer, ForeignKey("career_roles.id"), nullable=False)
+    title = Column(String, nullable=False)  # e.g., "Full Stack Developer Path"
+    description = Column(Text, nullable=True)
+    duration_months = Column(Integer, nullable=True)  # Estimated completion time
+    difficulty = Column(String, default="intermediate")
+    
+    # Linked learning sequence
+    diploma_id = Column(Integer, ForeignKey("diplomas.id"), nullable=True)
+    program_ids = Column(Text, nullable=True)  # JSON array of program IDs in order
+    course_ids = Column(Text, nullable=True)  # JSON array of course IDs in order
+    
+    completion_percentage = Column(Integer, default=0)  # Avg completion for this pathway
+    students_count = Column(Integer, default=0)  # How many students follow this
+    popularity_score = Column(Integer, default=0)  # 0-100
+    
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class SkillDefinition(Base):
+    """Skills that can be developed through courses"""
+    __tablename__ = "skills_master"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)  # e.g., "Python", "React", "Data Analysis"
+    description = Column(Text, nullable=True)
+    category = Column(String, nullable=True)  # Technical, Soft Skills, Creative, etc.
+    is_trending = Column(Boolean, default=False)
+    popularity_score = Column(Integer, default=0)  # 0-100 based on course demands
+    demand_score = Column(Integer, default=0)  # 0-100 based on job market
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class CourseSkill(Base):
+    """Maps skills taught in courses"""
+    __tablename__ = "course_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    skill_id = Column(Integer, ForeignKey("skills_master.id"), nullable=False)
+    proficiency_level = Column(String, default="beginner")  # beginner, intermediate, advanced
+    order = Column(Integer, default=0)  # Order importance
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CareerRoleSkill(Base):
+    """Maps required skills for career roles"""
+    __tablename__ = "career_role_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    career_role_id = Column(Integer, ForeignKey("career_roles.id"), nullable=False)
+    skill_id = Column(Integer, ForeignKey("skills_master.id"), nullable=False)
+    proficiency_level = Column(String, default="intermediate")  # Required proficiency
+    importance = Column(Integer, default=5)  # 1-10 importance scale
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserCareerInterest(Base):
+    """Track user career interests and progress"""
+    __tablename__ = "user_career_interests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    career_role_id = Column(Integer, ForeignKey("career_roles.id"), nullable=False)
+    career_pathway_id = Column(Integer, ForeignKey("career_pathways.id"), nullable=True)
+    
+    status = Column(String, default="interested")  # interested, in_progress, completed
+    progress_percentage = Column(Integer, default=0)
+    
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class TrendingAnalytic(Base):
+    """Track trending courses and skills"""
+    __tablename__ = "trending_analytics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Course trending
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    course_enrollments_today = Column(Integer, default=0)
+    course_completions_today = Column(Integer, default=0)
+    
+    # Skill trending
+    skill_id = Column(Integer, ForeignKey("skills_master.id"), nullable=True)
+    skill_mentions = Column(Integer, default=0)  # Times mentioned in job postings, etc.
+    
+    # Career role trending
+    career_role_id = Column(Integer, ForeignKey("career_roles.id"), nullable=True)
+    role_searches = Column(Integer, default=0)  # How many users searched for this role
+    role_enrollments = Column(Integer, default=0)  # Pathway enrollments
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
