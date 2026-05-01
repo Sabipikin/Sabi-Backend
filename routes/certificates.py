@@ -14,7 +14,8 @@ from models import (
     Course, Program, Diploma
 )
 from schemas import CertificateResponse, CertificateDetailResponse
-from auth import get_current_user, decode_access_token
+from routes.auth import get_current_user
+from auth import decode_access_token
 from routes.admin_auth import get_current_admin
 from services.certificate_generator import CertificateGenerator
 

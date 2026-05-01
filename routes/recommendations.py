@@ -17,7 +17,7 @@ from schemas import (
     CareerPathwayResponse, CareerPathwayDetailResponse, SkillResponse,
     TrendingCourseResponse, TrendingSkillResponse, UserCareerPathResponse
 )
-from auth import get_current_user
+from routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 
